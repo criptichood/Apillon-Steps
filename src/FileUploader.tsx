@@ -1,21 +1,12 @@
+// FileUploader.tsx
 import React, { useState } from 'react';
 import { Button, Container, Typography, Box, CircularProgress } from '@mui/material';
-import { Storage } from '@apillon/sdk';
-
-
-// Define the FileMetadata interface to match the SDK's interface
-interface FileMetadata {
-  fileName: string;
-  content: Buffer; // Change the type to Buffer
-}
 
 interface FileUploaderProps {
-  apiKey: string;
-  apiSecret: string;
   bucketUuid: string;
 }
 
-const FileUploader: React.FC<FileUploaderProps> = ({ apiKey, apiSecret, bucketUuid }) => {
+const FileUploader: React.FC<FileUploaderProps> = ({ bucketUuid }) => {
   const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
   const [uploading, setUploading] = useState<boolean>(false);
 
@@ -28,27 +19,24 @@ const FileUploader: React.FC<FileUploaderProps> = ({ apiKey, apiSecret, bucketUu
     if (!selectedFiles) return;
     setUploading(true);
 
-    const storage = new Storage({
-     
-      key: apiKey,
-      secret: apiSecret,
-    });
-
     try {
-      const fileMetadataArray: FileMetadata[] = [];
+      const formData = new FormData();
       for (let i = 0; i < selectedFiles.length; i++) {
-        const file = selectedFiles[i];
-        const buffer = await readFileAsBuffer(file);
-        fileMetadataArray.push({
-          fileName: file.name,
-          content: buffer,
-        });
+        formData.append('files', selectedFiles[i]);
       }
 
-      // Assuming the SDK method expects an array of FileMetadata objects
-      await storage.bucket(bucketUuid).uploadFiles(fileMetadataArray);
+      const response = await fetch(`http://localhost:3001/upload/${bucketUuid}`, {
+        method: 'POST',
+        body: formData,
+      });
 
-      alert('Files uploaded successfully!');
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Upload response:', data);
+        alert('Files uploaded successfully!');
+      } else {
+        throw new Error('Failed to upload files');
+      }
     } catch (error) {
       console.error('Error uploading files:', error);
       alert('Error uploading files. Please try again.');
@@ -56,25 +44,6 @@ const FileUploader: React.FC<FileUploaderProps> = ({ apiKey, apiSecret, bucketUu
       setUploading(false);
       setSelectedFiles(null);
     }
-  };
-
-  const readFileAsBuffer = (file: File): Promise<Buffer> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target && event.target.result) {
-          const arrayBuffer = event.target.result as ArrayBuffer;
-          const buffer = Buffer.from(arrayBuffer);
-          resolve(buffer);
-        } else {
-          reject(new Error('Failed to read file'));
-        }
-      };
-      reader.onerror = (_event) => {
-        reject(new Error('Failed to read file'));
-      };
-      reader.readAsArrayBuffer(file);
-    });
   };
 
   return (

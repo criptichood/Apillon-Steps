@@ -15,7 +15,7 @@ const bucketUuid = import.meta.env.VITE_BucketUuid;
 // console.log("Keys", apiKey, bucketUuid, apiSecret)
   return (
     <>
-   <FileUploader apiKey={apiKey} apiSecret={apiSecret} bucketUuid={bucketUuid} />
+   <FileUploader  bucketUuid={bucketUuid} />
     </>
   )
 }
